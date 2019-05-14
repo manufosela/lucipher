@@ -1,4 +1,8 @@
-var LUCipher = require('../index.js');
+let LUCipher = require('../index.js');
 
-var LUC = new LUCipher('mipassword');
-console.log(LUC.cipher('Este es el texto a codificar'));
+let LUC = new LUCipher('mipassword');
+let code = LUC.cipher('Este es el texto a codificar');
+console.log(code);
+console.log('\n-------------------------------------\n');
+let decode = LUC.desCipher(code);
+console.log(decode);

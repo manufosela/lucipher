@@ -9,6 +9,14 @@ class LUCipher {
     this.decoder = new utf8.TextDecoder();
   }
 
+  _string2Bin(str) {
+    var result = [];
+    for (var i = 0; i < str.length; i++) {
+      result.push(str.charCodeAt(i));
+    }
+    return result;
+  }
+
   cipher(originalText) {
     let key = this.encoder.encode(this.key);
 
@@ -20,17 +28,17 @@ class LUCipher {
 
     let aesCtrE = new aesjs.CTR(key, new aesjs.Counter(5));
     aesCtrE.encrypt(textBytes, encryptedBytes);
-    return encryptedBytes;
+    let encryptedString = String.fromCharCode.apply(String, encryptedBytes);
+    return encryptedString;
   }
 
-  desCipher(encryptedBytes) {
-    // The counter mode of operation maintains internal state, so to
-    // decrypt a new instance must be instantiated.
+  desCipher(encryptedString) {
+    let encryptedBytes = this._string2Bin(encryptedString);
+    console.log(encryptedBytes);
     var aesCtrD = new aesjs.CTR(this.key, new aesjs.Counter(5));
     var decryptedBytes = new Uint8Array(encryptedBytes.length);
     aesCtrD.decrypt(encryptedBytes, decryptedBytes);
 
-    // Convert our bytes back into text
     var decryptedText = this.decoder.decode(decryptedBytes);
     return decryptedText;
   }
