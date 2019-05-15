@@ -3,7 +3,7 @@ Script para cifrar/descifrar textos usando el API crypto y el algoritmo aes-128-
 
 ¿Por qué añadir ruido?
 
-Si usamos por ejemplo la clave **miclave** para cifremos el texto **yo soy manufosela** obtendremos siempre la cadena cifrada *+0MXL1Clnk1xfXAsuF1rplf/zTjWTrNeAI5kY7Cc2ZY=*
+Si usamos por ejemplo la clave **miclave** para cifrar el texto **yo soy manufosela** obtendremos siempre la cadena cifrada *+0MXL1Clnk1xfXAsuF1rplf/zTjWTrNeAI5kY7Cc2ZY=*
 
 Si añadimos ruido pseudo-aleatorio, cada vez que cifremos el texto obtendremos una cadena cifrada diferente, pero que al descifrar y eliminar el ruido, nos permitirá obtener la cadena de texto descifrada.
 
