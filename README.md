@@ -1,5 +1,5 @@
 # lucipher (Let Us Cipher) [![GitHub version](https://badge.fury.io/gh/manufosela%2Flucipher.svg)](https://badge.fury.io/gh/manufosela%2Flucipher)
-Script para cifrar/descifrar textos usando el API crypto y el algoritmo **aes-128-cbc**, añadiendo además ruido a los textos antes de ser cifrados.
+Script para cifrar/descifrar textos usando el API crypto y el algoritmo **aes-128-cbc**, añadiendo además ruido a los textos antes de ser cifrados usando el paquete de npm [wordsnoise](https://www.npmjs.com/package/wordsnoise)
 
 ¿Por qué añadir ruido?
 
