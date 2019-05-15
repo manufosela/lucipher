@@ -27,18 +27,18 @@ let decode = LUC.desCipher(textocifrado);
 ## webservice
 
 Para cifrar:
-* endpoint: https://lucipher.herokuapp.com/encrypt
+* endpoint: https://lucipher.herokuapp.com/lucipher
 * params:
   * texto: texto a cifrar
   * password: password a utilizar para cifrar/descifrar
   
-[EJEMPLO Llamada servicio de cifrado](https://lucipher.herokuapp.com/encrypt?texto=yo%20soy%20manufosela&password=unarosaounclave)
+[EJEMPLO Llamada servicio de cifrado](https://lucipher.herokuapp.com/lucipher?texto=yo%20soy%20manufosela&password=unarosaounclave)
 
 Para descifrar:
-* endpoint: https://lucipher.herokuapp.com/desencrypt
+* endpoint: https://lucipher.herokuapp.com/angel
 * params:
   * texto: texto cifrado
   * password: password a utilizar para cifrar/descifrar
   
-[EJEMPLO Llamada servicio descifrado](https://lucipher.herokuapp.com/desencrypt?texto=xTB9tFJxY42HEGPFatsW704YCaER1Cq0lijyTcfj8E2adi/MoEuyQTRJrm7ovo/z&password=unarosaounclave)
+[EJEMPLO Llamada servicio descifrado](https://lucipher.herokuapp.com/angel?texto=xTB9tFJxY42HEGPFatsW704YCaER1Cq0lijyTcfj8E2adi/MoEuyQTRJrm7ovo/z&password=unarosaounclave)
 
