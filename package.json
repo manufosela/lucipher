@@ -1,5 +1,5 @@
 {
-  "name": "LUCipher",
+  "name": "lucipher",
   "version": "1.0.0",
   "description": "LUCipher, Let Us Cipher",
   "main": "index.js",
@@ -10,8 +10,6 @@
   "author": "manufosela",
   "license": "MIT",
   "dependencies": {
-    "aes-es": "^2.0.0",
-    "utf8-encoding": "^0.1.2",
     "wordsnoise": "^1.0.0"
   }
 }
