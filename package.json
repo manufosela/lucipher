@@ -10,6 +10,6 @@
   "author": "manufosela",
   "license": "MIT",
   "dependencies": {
-    "wordsnoise": "^1.0.0"
+    "wordsnoise": "^1.0.2"
   }
 }
