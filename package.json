@@ -1,6 +1,6 @@
 {
   "name": "lucipher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "LUCipher, Let Us Cipher",
   "main": "index.js",
   "scripts": {
