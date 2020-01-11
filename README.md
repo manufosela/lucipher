@@ -17,12 +17,12 @@ $ npm --save i lucipher
 
 En tu código se usa así
 ```javascript
-let LUCipher = require('lucipher');
+const LUCipher = require('lucipher');
 ...
-let LUC = new LUCipher(passw, salt);
-let code = LUC.cipher(texto);
+const LUC = new LUCipher(passw, salt);
+const code = LUC.cipher(texto);
 ...
-let decode = LUC.desCipher(textocifrado);
+const decode = LUC.desCipher(textocifrado);
 ```
 ## webservice
 
