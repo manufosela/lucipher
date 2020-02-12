@@ -1,0 +1,18 @@
+{
+  "name": "lucipher",
+  "version": "1.0.1",
+  "description": "LUCipher, Let Us Cipher",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "manufosela",
+  "license": "MIT",
+  "dependencies": {
+    "Buffer": "0.0.0",
+    "crypto-browserify": "^3.12.0",
+    "pbkdf2": "^3.0.17",
+    "wordsnoise": "^1.0.2"
+  }
+}
