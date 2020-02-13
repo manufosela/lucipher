@@ -1,7 +1,7 @@
 const WordsNoise = require('wordsnoise');
 const crypto = require('crypto');
 
-export default class LUCipher {
+export class LUCipher {
 
   constructor(keyword, salt) {
     this.key = keyword.padStart(32, 'SD0susEWo0pKd7qas#Y(qmXXd9S1lv14').substr(0, 32);
