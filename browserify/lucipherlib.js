@@ -1,3 +1,6 @@
+var crypto = require('crypto');
+var pbkdf2 = require('pbkdf2');
+
 class WordsNoise {
   constructor() {
     this.noiseArray = ['½', '¬', 'ł', '€', '¶', 'ŧ', '←', '↓', '→', 'ø', 'æ', 'ß', 'ð', 'đ', 'ŋ', 'ħ', '»', '¢', 'µ'];
@@ -69,3 +72,11 @@ class LUCipher {
     return decText;
   }
 }
+
+let LUC = new LUCipher('mipassword', 'misalt');
+let code = LUC.cipher('Este es el texto a codificar');
+console.log('SIN CODIFICAR: Este es el texto a codificar');
+console.log('CODIFICADO: ', code);
+console.log('\n-------------------------------------\n');
+let decode = LUC.desCipher(code);
+console.log(decode);
