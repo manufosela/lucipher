@@ -1,4 +1,4 @@
-let LUCipher = require('../index.js');
+import LUCipher from '../LUCipher.mjs';
 
 let LUC = new LUCipher('mipassword', 'misalt');
 let code = LUC.cipher('Este es el texto a codificar');
