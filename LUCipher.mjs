@@ -1,8 +1,5 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-
-const WordsNoise = require('wordsnoise');
-const crypto = require('crypto');
+import WordsNoise from 'wordsnoise';
+import crypto from 'crypto';
 
 class LUCipher {
 
