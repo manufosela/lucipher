@@ -61,5 +61,3 @@ class LUCipher {
   }
 }
 var LUCipher_default = LUCipher;
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {});
