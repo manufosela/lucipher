@@ -1,9 +1,9 @@
 {
   "name": "lucipher",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "LUCipher, Let Us Cipher",
   "main": "index.js",
-  "type": "module",
+  "module": "index.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

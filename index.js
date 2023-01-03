@@ -1,6 +1,6 @@
 // Copyright 2022 manufosela.
 // SPDX-License-Identifier: MIT
 
-import LUCipher from "./LUCipher.mjs";
+const LUCipher = require('./LUCipher.js');
 
-export default LUCipher;
+exports.LUCipher = LUCipher;
