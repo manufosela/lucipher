@@ -1,6 +1,6 @@
 {
   "name": "lucipher",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "LUCipher, Let Us Cipher",
   "main": "index.js",
   "module": "index.mjs",
@@ -16,7 +16,7 @@
     "decryption"
   ],
   "author": "manufosela",
-  "license": "Copyright",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/manufosela/lucipher/issues"
   },
