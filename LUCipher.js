@@ -26,7 +26,8 @@ module.exports = __toCommonJS(LUCipher_exports);
 var import_wordsnoise = __toESM(require("wordsnoise"), 1);
 var import_crypto = __toESM(require("crypto"), 1);
 class LUCipher {
-  constructor(keyword, salt) {
+  constructor(keyword = '', salt = '') {
+    if (keyword === '' || salt === '') { throw new Error('The keyword and salt are required'); }
     this.key = keyword.padStart(32, "SD0susEWo0pKd7qas#Y(qmXXd9S1lv14").substr(0, 32);
     this.salt = salt.padStart(16, "ABj4PQgf3j5gblQ0").substr(0, 16);
     this._algorithm = "aes-128-cbc";
