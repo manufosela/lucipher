@@ -1,9 +1,18 @@
 {
   "name": "lucipher",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "LUCipher (Let Us Cipher) — authenticated symmetric encryption with ChaCha20-Poly1305 and scrypt",
   "main": "LUCipher.js",
   "module": "index.mjs",
+  "files": [
+    "LUCipher.js",
+    "LUCipher.mjs",
+    "index.js",
+    "index.mjs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -27,7 +36,7 @@
   "bugs": {
     "url": "https://github.com/manufosela/lucipher/issues"
   },
-  "homepage": "https://github.com/manufosela/lucipher/blob/master/README.md",
+  "homepage": "https://github.com/manufosela/lucipher/blob/main/README.md",
   "engines": {
     "node": ">=16"
   },
