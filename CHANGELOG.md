@@ -3,6 +3,31 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y versionado según [SemVer](https://semver.org/lang/es/).
 
+## [4.0.0] - 2026-07-19
+
+Core isomorfo (Node + navegador) sobre Web Crypto API.
+
+### Added
+
+- Cifrado con **AES-256-GCM** y derivación de clave **PBKDF2-SHA256** (600 000
+  iteraciones), usando solo `globalThis.crypto` (sin `node:crypto` ni `Buffer`).
+- **Interoperabilidad Node ↔ navegador**: un texto cifrado en un entorno se
+  descifra en el otro. Verificada con un test de Playwright.
+- `exports` en package.json para resolución ESM/CJS.
+
+### Changed
+
+- **BREAKING:** `cipher` y `desCipher` son **asíncronos** (devuelven promesas).
+- **BREAKING:** formato v4, no interoperable con v3 al cifrar. v4 solo lee v4.
+- **BREAKING:** primitivas de ChaCha20-Poly1305 + scrypt a AES-256-GCM + PBKDF2,
+  para poder correr igual en Node y navegador.
+- Requisito de entorno: Node ≥ 19 o navegador moderno en contexto seguro.
+
+### Removed
+
+- **BREAKING:** dependencia de `node:crypto` y de `scrypt`/`chacha20-poly1305`.
+- Lectura de textos v2/v3: para descifrarlos, usa la versión 3.0.x.
+
 ## [3.0.1] - 2026-07-19
 
 ### Changed

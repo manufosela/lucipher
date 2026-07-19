@@ -1,7 +1,7 @@
 {
   "name": "lucipher",
-  "version": "3.0.1",
-  "description": "LUCipher (Let Us Cipher) — authenticated symmetric encryption with ChaCha20-Poly1305 and scrypt",
+  "version": "4.0.0",
+  "description": "LUCipher (Let Us Cipher) — isomorphic authenticated encryption (AES-256-GCM + PBKDF2) for Node and the browser",
   "main": "LUCipher.js",
   "module": "index.mjs",
   "exports": {
@@ -34,8 +34,11 @@
     "encryption",
     "decryption",
     "aead",
-    "chacha20-poly1305",
-    "scrypt",
+    "aes-gcm",
+    "pbkdf2",
+    "webcrypto",
+    "isomorphic",
+    "browser",
     "crypto"
   ],
   "author": "manufosela",
