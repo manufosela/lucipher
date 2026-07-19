@@ -1,44 +1,97 @@
-import WordsNoise from 'wordsnoise';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
+
+const VERSION = 3;
+const SALT_LEN = 16;
+const NONCE_LEN = 12;
+const TAG_LEN = 16;
+const KEY_LEN = 32;
+const LEN_HEADER = 4;
+const HEADER_LEN = 1 + SALT_LEN + NONCE_LEN + TAG_LEN;
+
+// scrypt cost parameters (memory-hard KDF). maxmem must exceed 128 * N * r bytes.
+const SCRYPT = { N: 2 ** 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+
+// Legacy v2 constants — kept only to READ ciphertext produced before v3.
+// v2 was AES-128-CBC with a fixed IV plus wordsnoise; it is never produced anymore.
+const V2_ALGORITHM = 'aes-128-cbc';
+const V2_KEY_PAD = 'SD0susEWo0pKd7qas#Y(qmXXd9S1lv14';
+const V2_SALT_PAD = 'ABj4PQgf3j5gblQ0';
+const V2_IV = 'aAB1jhPQ89o=f619';
+const V2_NOISE = ['½', '¬', 'ł', '€', '¶', 'ŧ', '←', '↓', '→', 'ø', 'æ', 'ß', 'ð', 'đ', 'ŋ', 'ħ', '»', '¢', 'µ'];
+const V2_NOISE_RE = new RegExp(`[${V2_NOISE.join('')}]`, 'gu');
 
 class LUCipher {
-
   constructor(keyword = '', salt = '') {
-    if (keyword === '' || salt === '') { throw new Error('The keyword and salt are required'); }
-    this.key = keyword.padStart(32, 'SD0susEWo0pKd7qas#Y(qmXXd9S1lv14').substr(0, 32);
-    this.salt = salt.padStart(16, 'ABj4PQgf3j5gblQ0').substr(0, 16);
-    this._algorithm = 'aes-128-cbc';
-    this._iv = 'aAB1jhPQ89o=f619';
-    this._inputEncoding = 'utf8';
-    this._outputEncoding = 'base64';
-    this.ws = new WordsNoise();
+    if (keyword === '') { throw new Error('The keyword is required'); }
+    this.keyword = keyword;
+    this.salt = salt; // only used to read legacy v2 ciphertext
   }
 
-  _createHashPassword() {
-    let nodeCrypto = crypto.pbkdf2Sync(Buffer.from(this.key), Buffer.from(this.salt), 65536, 16, 'sha1');
-    let response = nodeCrypto || nodeCrypto.toString('hex');
-    return nodeCrypto;
+  #deriveKey(salt) {
+    return crypto.scryptSync(Buffer.from(this.keyword, 'utf8'), salt, KEY_LEN, SCRYPT);
+  }
+
+  // Length-hiding padding: [uint32 realLen][plaintext][random padding].
+  // The whole block is encrypted and authenticated, so the padding is
+  // recovered exactly and never corrupts the payload.
+  #pad(text) {
+    const real = Buffer.from(text, 'utf8');
+    const header = Buffer.alloc(LEN_HEADER);
+    header.writeUInt32BE(real.length, 0);
+    const padLen = crypto.randomBytes(1)[0];
+    return Buffer.concat([header, real, crypto.randomBytes(padLen)]);
+  }
+
+  #unpad(block) {
+    const realLen = block.readUInt32BE(0);
+    return block.subarray(LEN_HEADER, LEN_HEADER + realLen).toString('utf8');
   }
 
   cipher(originalText) {
-    let text = this.ws.addNoise(originalText);
-    let cipher = crypto.createCipheriv(this._algorithm, this._createHashPassword(), this._iv);
-    let encrypted = cipher.update(text, this._inputEncoding, this._outputEncoding);
-    encrypted += cipher.final(this._outputEncoding);
-    return encrypted;
+    if (typeof originalText !== 'string') { throw new TypeError('cipher expects a string'); }
+    const salt = crypto.randomBytes(SALT_LEN);
+    const nonce = crypto.randomBytes(NONCE_LEN);
+    const key = this.#deriveKey(salt);
+    const encipher = crypto.createCipheriv('chacha20-poly1305', key, nonce, { authTagLength: TAG_LEN });
+    const ciphertext = Buffer.concat([encipher.update(this.#pad(originalText)), encipher.final()]);
+    const tag = encipher.getAuthTag();
+    return Buffer.concat([Buffer.from([VERSION]), salt, nonce, tag, ciphertext]).toString('base64');
   }
 
-  desCipher(encrypted) {
-    let decText = '';
-    try {
-      let descipher = crypto.createDecipheriv(this._algorithm, Buffer.from(this._createHashPassword(), 'hex'), this._iv);
-      let dec = descipher.update(encrypted, this._outputEncoding, this._inputEncoding);
-      dec += descipher.final(this._inputEncoding);
-      decText = this.ws.quitNoise(dec);
-    } catch (er) {
-      console.log(er);
+  desCipher(encoded) {
+    if (typeof encoded !== 'string') { throw new TypeError('desCipher expects a string'); }
+    const buf = Buffer.from(encoded, 'base64');
+    if (buf.length >= HEADER_LEN && buf[0] === VERSION) {
+      return this.#desCipherV3(buf);
     }
-    return decText;
+    return this.#desCipherV2(encoded);
+  }
+
+  #desCipherV3(buf) {
+    let offset = 1;
+    const salt = buf.subarray(offset, offset += SALT_LEN);
+    const nonce = buf.subarray(offset, offset += NONCE_LEN);
+    const tag = buf.subarray(offset, offset += TAG_LEN);
+    const ciphertext = buf.subarray(offset);
+    const key = this.#deriveKey(salt);
+    const decipher = crypto.createDecipheriv('chacha20-poly1305', key, nonce, { authTagLength: TAG_LEN });
+    decipher.setAuthTag(tag);
+    // .final() throws if the authentication tag does not verify (tampering).
+    const block = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    return this.#unpad(block);
+  }
+
+  // Read-only path for ciphertext produced by v2. Requires the original salt.
+  #desCipherV2(encoded) {
+    if (this.salt === '') {
+      throw new Error('Legacy v2 ciphertext requires the original salt: new LUCipher(keyword, salt)');
+    }
+    const key = this.keyword.padStart(32, V2_KEY_PAD).slice(0, 32);
+    const salt = this.salt.padStart(16, V2_SALT_PAD).slice(0, 16);
+    const derived = crypto.pbkdf2Sync(Buffer.from(key), Buffer.from(salt), 65536, 16, 'sha1');
+    const decipher = crypto.createDecipheriv(V2_ALGORITHM, derived, Buffer.from(V2_IV, 'utf8'));
+    const noisy = decipher.update(encoded, 'base64', 'utf8') + decipher.final('utf8');
+    return noisy.replaceAll(V2_NOISE_RE, '');
   }
 }
 

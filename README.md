@@ -1,12 +1,16 @@
 # lucipher (Let Us Cipher) [![GitHub version](https://badge.fury.io/gh/manufosela%2Flucipher.svg)](https://badge.fury.io/gh/manufosela%2Flucipher)
 
-Script para cifrar/descifrar textos usando el API crypto y el algoritmo **aes-128-cbc**, añadiendo además ruido a los textos antes de ser cifrados usando el paquete de npm [wordsnoise](https://www.npmjs.com/package/wordsnoise)
+Librería para cifrar/descifrar textos con **cifrado autenticado** usando el `crypto` nativo de Node.
 
-¿Por qué añadir ruido?
+Desde la **v3** el diseño es:
 
-Si usamos por ejemplo la clave **miclave** para cifrar el texto **yo soy manufosela** obtendremos siempre la cadena cifrada _+0MXL1Clnk1xfXAsuF1rplf/zTjWTrNeAI5kY7Cc2ZY=_
+- **ChaCha20-Poly1305** (AEAD): confidencialidad e integridad. Cualquier manipulación del texto cifrado se detecta al descifrar (lanza excepción, no devuelve datos corruptos).
+- **scrypt** como derivación de clave (memory-hard), en lugar de PBKDF2-SHA1.
+- **salt y nonce aleatorios por mensaje**: cifrar dos veces el mismo texto produce siempre una salida distinta, sin necesidad de "ruido".
+- **Padding de longitud variable** autenticado: oculta parcialmente la longitud real del mensaje sin corromper los datos.
+- **Contenedor autodescriptivo** (`versión · salt · nonce · tag · ciphertext` en base64): para descifrar solo necesitas la contraseña.
 
-Si añadimos ruido pseudo-aleatorio, cada vez que cifremos el texto obtendremos una cadena cifrada diferente, pero que al descifrar y eliminar el ruido, nos permitirá obtener la cadena de texto descifrada.
+> **v3 requiere Node ≥ 16** (usa `chacha20-poly1305` y `scrypt`). No funciona en navegador con browserify; un port a WebCrypto está pendiente.
 
 ## Instalación
 
@@ -17,33 +21,49 @@ En tu proyecto se instala así
 $ npm --save i lucipher
 ```
 
-En tu código se usa así
+En tu código, con ES modules:
+
+```javascript
+import LUCipher from 'lucipher';
+
+const luc = new LUCipher(password);       // el salt ya no es necesario en v3
+const code = luc.cipher('texto a cifrar');
+const decode = luc.desCipher(code);
+```
+
+O con CommonJS:
 
 ```javascript
 const LUCipher = require('lucipher').default;
-...
-const LUC = new LUCipher(passw, salt);
-const code = LUC.cipher(texto);
-...
-const decode = LUC.desCipher(textocifrado);
+
+const luc = new LUCipher(password);
+const code = luc.cipher('texto a cifrar');
+const decode = luc.desCipher(code);
 ```
 
-## webservice
+## Breaking changes (v2 → v3)
 
-Para cifrar:
+La v3 es un cambio mayor. Si vienes de v2, ten en cuenta:
 
-- endpoint: https://lucipher.herokuapp.com/lucipher
-- params:
-  - texto: texto a cifrar
-  - password: password a utilizar para cifrar/descifrar
+- **Formato incompatible al cifrar:** un texto cifrado con v3 no lo descifra v2. (v3 sí lee textos v2; ver Migración.)
+- **`desCipher` lanza excepción** ante texto manipulado, corrupto o clave incorrecta, en vez de devolver `''`. Si tu código dependía de la cadena vacía como señal de error, adáptalo a `try/catch`.
+- **`wordsnoise` deja de ser dependencia** y el "ruido" desaparece: ya no corrompe textos que contienen caracteres como `€ ½ µ » ¬`.
+- **Solo Node (≥ 16):** se retiró el bundle para navegador (`browserify`), porque `chacha20-poly1305` y `scrypt` no existen en ese entorno. El soporte de navegador (WebCrypto) llegará en una versión posterior.
+- El segundo argumento del constructor (`salt`) ya **no es necesario** para cifrar; solo se usa para **leer** textos v2 antiguos.
 
-[EJEMPLO Llamada servicio de cifrado](https://lucipher.herokuapp.com/lucipher?texto=yo%20soy%20manufosela&password=unarosaounclave)
+## Migración desde v2
 
-Para descifrar:
+- Los nuevos cifrados usan **siempre** el formato v3.
+- `desCipher` **también lee textos cifrados con v2** (AES-128-CBC + ruido). Para descifrar un texto v2 debes construir la instancia con el mismo `salt` de entonces:
 
-- endpoint: https://lucipher.herokuapp.com/angel
-- params:
-  - texto: texto cifrado
-  - password: password a utilizar para cifrar/descifrar
+  ```javascript
+  const luc = new LUCipher(password, saltAntiguo);
+  const claro = luc.desCipher(textoCifradoV2);
+  ```
 
-[EJEMPLO Llamada servicio descifrado](https://lucipher.herokuapp.com/angel?texto=xTB9tFJxY42HEGPFatsW704YCaER1Cq0lijyTcfj8E2adi/MoEuyQTRJrm7ovo/z&password=unarosaounclave)
+- **Cambio de comportamiento:** ante un texto manipulado, corrupto o con clave incorrecta, `desCipher` **lanza una excepción** en lugar de devolver una cadena vacía. Envuélvelo en `try/catch` si necesitas manejar ese caso.
+
+## Notas de seguridad
+
+- No incrustes contraseñas en URLs ni en query strings: quedan en logs de servidor, proxies e historial.
+- El formato v2 (IV fijo, sin autenticación) se mantiene **solo para lectura** y está deprecado. Re-cifra tus datos con v3 cuando puedas.
