@@ -3,6 +3,15 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y versionado según [SemVer](https://semver.org/lang/es/).
 
+## [3.0.1] - 2026-07-19
+
+### Changed
+
+- El paquete publicado solo incluye los ficheros de runtime y documentación
+  (campo `files`): se excluyen `.vscode/`, `TOOLS.md`, `tests/` y `demo/` del
+  tarball de npm.
+- `homepage` apunta a la rama `main`.
+
 ## [3.0.0] - 2026-07-19
 
 Rediseño criptográfico completo a cifrado autenticado (AEAD).
