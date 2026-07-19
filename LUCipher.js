@@ -1,8 +1,6 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -16,105 +14,104 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var LUCipher_exports = {};
 __export(LUCipher_exports, {
   default: () => LUCipher_default
 });
 module.exports = __toCommonJS(LUCipher_exports);
-var import_node_crypto = __toESM(require("node:crypto"), 1);
-const VERSION = 3;
+const VERSION = 4;
 const SALT_LEN = 16;
-const NONCE_LEN = 12;
-const TAG_LEN = 16;
-const KEY_LEN = 32;
+const IV_LEN = 12;
+const KEY_BITS = 256;
+const PBKDF2_ITERATIONS = 6e5;
 const LEN_HEADER = 4;
-const HEADER_LEN = 1 + SALT_LEN + NONCE_LEN + TAG_LEN;
-const SCRYPT = { N: 2 ** 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
-const V2_ALGORITHM = "aes-128-cbc";
-const V2_KEY_PAD = "SD0susEWo0pKd7qas#Y(qmXXd9S1lv14";
-const V2_SALT_PAD = "ABj4PQgf3j5gblQ0";
-const V2_IV = "aAB1jhPQ89o=f619";
-const V2_NOISE = ["\xBD", "\xAC", "\u0142", "\u20AC", "\xB6", "\u0167", "\u2190", "\u2193", "\u2192", "\xF8", "\xE6", "\xDF", "\xF0", "\u0111", "\u014B", "\u0127", "\xBB", "\xA2", "\xB5"];
-const V2_NOISE_RE = new RegExp(`[${V2_NOISE.join("")}]`, "gu");
+const HEADER_LEN = 1 + SALT_LEN + IV_LEN;
+const webcrypto = globalThis.crypto;
+if (!webcrypto?.subtle) {
+  throw new Error("LUCipher requires the Web Crypto API (Node >= 19 or a modern browser)");
+}
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+const randomBytes = (length) => webcrypto.getRandomValues(new Uint8Array(length));
+function bytesToBase64(bytes) {
+  let binary = "";
+  const CHUNK = 32768;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
 class LUCipher {
-  constructor(keyword = "", salt = "") {
+  constructor(keyword = "") {
     if (keyword === "") {
       throw new Error("The keyword is required");
     }
     this.keyword = keyword;
-    this.salt = salt;
   }
-  #deriveKey(salt) {
-    return import_node_crypto.default.scryptSync(Buffer.from(this.keyword, "utf8"), salt, KEY_LEN, SCRYPT);
+  async #deriveKey(salt) {
+    const baseKey = await webcrypto.subtle.importKey("raw", encoder.encode(this.keyword), "PBKDF2", false, ["deriveKey"]);
+    return webcrypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+      baseKey,
+      { name: "AES-GCM", length: KEY_BITS },
+      false,
+      ["encrypt", "decrypt"]
+    );
   }
   // Length-hiding padding: [uint32 realLen][plaintext][random padding].
-  // The whole block is encrypted and authenticated, so the padding is
-  // recovered exactly and never corrupts the payload.
+  // Encrypted and authenticated as a whole, so it is recovered exactly and
+  // never corrupts the payload.
   #pad(text) {
-    const real = Buffer.from(text, "utf8");
-    const header = Buffer.alloc(LEN_HEADER);
-    header.writeUInt32BE(real.length, 0);
-    const padLen = import_node_crypto.default.randomBytes(1)[0];
-    return Buffer.concat([header, real, import_node_crypto.default.randomBytes(padLen)]);
+    const real = encoder.encode(text);
+    const padLength = randomBytes(1)[0];
+    const block = new Uint8Array(LEN_HEADER + real.length + padLength);
+    new DataView(block.buffer).setUint32(0, real.length, false);
+    block.set(real, LEN_HEADER);
+    block.set(randomBytes(padLength), LEN_HEADER + real.length);
+    return block;
   }
   #unpad(block) {
-    const realLen = block.readUInt32BE(0);
-    return block.subarray(LEN_HEADER, LEN_HEADER + realLen).toString("utf8");
+    const realLength = new DataView(block.buffer, block.byteOffset, block.byteLength).getUint32(0, false);
+    return decoder.decode(block.subarray(LEN_HEADER, LEN_HEADER + realLength));
   }
-  cipher(originalText) {
+  async cipher(originalText) {
     if (typeof originalText !== "string") {
       throw new TypeError("cipher expects a string");
     }
-    const salt = import_node_crypto.default.randomBytes(SALT_LEN);
-    const nonce = import_node_crypto.default.randomBytes(NONCE_LEN);
-    const key = this.#deriveKey(salt);
-    const encipher = import_node_crypto.default.createCipheriv("chacha20-poly1305", key, nonce, { authTagLength: TAG_LEN });
-    const ciphertext = Buffer.concat([encipher.update(this.#pad(originalText)), encipher.final()]);
-    const tag = encipher.getAuthTag();
-    return Buffer.concat([Buffer.from([VERSION]), salt, nonce, tag, ciphertext]).toString("base64");
+    const salt = randomBytes(SALT_LEN);
+    const iv = randomBytes(IV_LEN);
+    const key = await this.#deriveKey(salt);
+    const ciphertext = new Uint8Array(await webcrypto.subtle.encrypt({ name: "AES-GCM", iv }, key, this.#pad(originalText)));
+    const out = new Uint8Array(HEADER_LEN + ciphertext.length);
+    out[0] = VERSION;
+    out.set(salt, 1);
+    out.set(iv, 1 + SALT_LEN);
+    out.set(ciphertext, HEADER_LEN);
+    return bytesToBase64(out);
   }
-  desCipher(encoded) {
+  async desCipher(encoded) {
     if (typeof encoded !== "string") {
       throw new TypeError("desCipher expects a string");
     }
-    const buf = Buffer.from(encoded, "base64");
-    if (buf.length >= HEADER_LEN && buf[0] === VERSION) {
-      return this.#desCipherV3(buf);
+    const buf = base64ToBytes(encoded);
+    if (buf.length < HEADER_LEN || buf[0] !== VERSION) {
+      throw new Error("Unrecognized or unsupported ciphertext format (expected v4)");
     }
-    return this.#desCipherV2(encoded);
-  }
-  #desCipherV3(buf) {
-    let offset = 1;
-    const salt = buf.subarray(offset, offset += SALT_LEN);
-    const nonce = buf.subarray(offset, offset += NONCE_LEN);
-    const tag = buf.subarray(offset, offset += TAG_LEN);
-    const ciphertext = buf.subarray(offset);
-    const key = this.#deriveKey(salt);
-    const decipher = import_node_crypto.default.createDecipheriv("chacha20-poly1305", key, nonce, { authTagLength: TAG_LEN });
-    decipher.setAuthTag(tag);
-    const block = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    const salt = buf.subarray(1, 1 + SALT_LEN);
+    const iv = buf.subarray(1 + SALT_LEN, HEADER_LEN);
+    const ciphertext = buf.subarray(HEADER_LEN);
+    const key = await this.#deriveKey(salt);
+    const block = new Uint8Array(await webcrypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext));
     return this.#unpad(block);
-  }
-  // Read-only path for ciphertext produced by v2. Requires the original salt.
-  #desCipherV2(encoded) {
-    if (this.salt === "") {
-      throw new Error("Legacy v2 ciphertext requires the original salt: new LUCipher(keyword, salt)");
-    }
-    const key = this.keyword.padStart(32, V2_KEY_PAD).slice(0, 32);
-    const salt = this.salt.padStart(16, V2_SALT_PAD).slice(0, 16);
-    const derived = import_node_crypto.default.pbkdf2Sync(Buffer.from(key), Buffer.from(salt), 65536, 16, "sha1");
-    const decipher = import_node_crypto.default.createDecipheriv(V2_ALGORITHM, derived, Buffer.from(V2_IV, "utf8"));
-    const noisy = decipher.update(encoded, "base64", "utf8") + decipher.final("utf8");
-    return noisy.replaceAll(V2_NOISE_RE, "");
   }
 }
 var LUCipher_default = LUCipher;

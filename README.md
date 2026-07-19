@@ -1,34 +1,33 @@
 # lucipher (Let Us Cipher) [![GitHub version](https://badge.fury.io/gh/manufosela%2Flucipher.svg)](https://badge.fury.io/gh/manufosela%2Flucipher)
 
-Librería para cifrar/descifrar textos con **cifrado autenticado** usando el `crypto` nativo de Node.
+Librería **isomorfa** de cifrado autenticado: el mismo código corre en **Node y en el navegador** usando la Web Crypto API (`crypto.subtle`).
 
-Desde la **v3** el diseño es:
+Desde la **v4** el diseño es:
 
-- **ChaCha20-Poly1305** (AEAD): confidencialidad e integridad. Cualquier manipulación del texto cifrado se detecta al descifrar (lanza excepción, no devuelve datos corruptos).
-- **scrypt** como derivación de clave (memory-hard), en lugar de PBKDF2-SHA1.
-- **salt y nonce aleatorios por mensaje**: cifrar dos veces el mismo texto produce siempre una salida distinta, sin necesidad de "ruido".
+- **AES-256-GCM** (AEAD): confidencialidad e integridad. Cualquier manipulación del texto cifrado se detecta al descifrar (la promesa se rechaza, no devuelve datos corruptos).
+- **PBKDF2-SHA256** (600 000 iteraciones) como derivación de clave.
+- **salt e IV aleatorios por mensaje**: cifrar dos veces el mismo texto produce siempre una salida distinta.
 - **Padding de longitud variable** autenticado: oculta parcialmente la longitud real del mensaje sin corromper los datos.
-- **Contenedor autodescriptivo** (`versión · salt · nonce · tag · ciphertext` en base64): para descifrar solo necesitas la contraseña.
+- **Contenedor autodescriptivo** (`versión · salt · iv · ciphertext+tag` en base64): para descifrar solo necesitas la contraseña.
+- **Formato universal**: un texto cifrado en Node se descifra en el navegador y viceversa.
+- **API asíncrona**: `cipher`/`desCipher` devuelven promesas (Web Crypto es async).
 
-> **v3 requiere Node ≥ 16** (usa `chacha20-poly1305` y `scrypt`). No funciona en navegador con browserify; un port a WebCrypto está pendiente.
+> **Requiere Node ≥ 19 o un navegador moderno en contexto seguro** (HTTPS o `localhost`), donde `globalThis.crypto.subtle` está disponible.
 
 ## Instalación
 
-Se puede usar como dependencia.
-En tu proyecto se instala así
-
 ```
-$ npm --save i lucipher
+$ npm i lucipher
 ```
 
-En tu código, con ES modules:
+En Node, con ES modules:
 
 ```javascript
 import LUCipher from 'lucipher';
 
-const luc = new LUCipher(password);       // el salt ya no es necesario en v3
-const code = luc.cipher('texto a cifrar');
-const decode = luc.desCipher(code);
+const luc = new LUCipher(password);
+const code = await luc.cipher('texto a cifrar');
+const decode = await luc.desCipher(code);
 ```
 
 O con CommonJS:
@@ -37,33 +36,34 @@ O con CommonJS:
 const LUCipher = require('lucipher').default;
 
 const luc = new LUCipher(password);
-const code = luc.cipher('texto a cifrar');
-const decode = luc.desCipher(code);
+const code = await luc.cipher('texto a cifrar');
+const decode = await luc.desCipher(code);
 ```
 
-## Breaking changes (v2 → v3)
+En el navegador, como módulo ESM (sin bundle):
 
-La v3 es un cambio mayor. Si vienes de v2, ten en cuenta:
+```html
+<script type="module">
+  import LUCipher from './node_modules/lucipher/index.mjs';
 
-- **Formato incompatible al cifrar:** un texto cifrado con v3 no lo descifra v2. (v3 sí lee textos v2; ver Migración.)
-- **`desCipher` lanza excepción** ante texto manipulado, corrupto o clave incorrecta, en vez de devolver `''`. Si tu código dependía de la cadena vacía como señal de error, adáptalo a `try/catch`.
-- **`wordsnoise` deja de ser dependencia** y el "ruido" desaparece: ya no corrompe textos que contienen caracteres como `€ ½ µ » ¬`.
-- **Solo Node (≥ 16):** se retiró el bundle para navegador (`browserify`), porque `chacha20-poly1305` y `scrypt` no existen en ese entorno. El soporte de navegador (WebCrypto) llegará en una versión posterior.
-- El segundo argumento del constructor (`salt`) ya **no es necesario** para cifrar; solo se usa para **leer** textos v2 antiguos.
+  const luc = new LUCipher(password);
+  const code = await luc.cipher('texto a cifrar');
+  const decode = await luc.desCipher(code); // descifra también lo cifrado en Node
+</script>
+```
 
-## Migración desde v2
+## Breaking changes (v3 → v4)
 
-- Los nuevos cifrados usan **siempre** el formato v3.
-- `desCipher` **también lee textos cifrados con v2** (AES-128-CBC + ruido). Para descifrar un texto v2 debes construir la instancia con el mismo `salt` de entonces:
+La v4 es un cambio mayor. Si vienes de v3:
 
-  ```javascript
-  const luc = new LUCipher(password, saltAntiguo);
-  const claro = luc.desCipher(textoCifradoV2);
-  ```
-
-- **Cambio de comportamiento:** ante un texto manipulado, corrupto o con clave incorrecta, `desCipher` **lanza una excepción** en lugar de devolver una cadena vacía. Envuélvelo en `try/catch` si necesitas manejar ese caso.
+- **API asíncrona:** `cipher` y `desCipher` ahora devuelven promesas. Añade `await` (o `.then`).
+- **Formato nuevo (v4), no interoperable con v3** al cifrar. v4 solo lee textos v4; para leer textos v2/v3 antiguos, mantén una instancia de la versión 3.0.x.
+- **Cambio de primitivas:** de ChaCha20-Poly1305 + scrypt (Node) a **AES-256-GCM + PBKDF2** (comunes a Node y navegador). Es el precio de la interoperabilidad: PBKDF2 es menos resistente a hardware dedicado que scrypt (mitigado con 600 000 iteraciones).
+- **Ya no depende de `node:crypto`** ni del build browserify: un único core isomorfo.
+- **Requisito de entorno:** Node ≥ 19 o navegador moderno en contexto seguro.
 
 ## Notas de seguridad
 
 - No incrustes contraseñas en URLs ni en query strings: quedan en logs de servidor, proxies e historial.
-- El formato v2 (IV fijo, sin autenticación) se mantiene **solo para lectura** y está deprecado. Re-cifra tus datos con v3 cuando puedas.
+- `crypto.subtle` solo está disponible en contextos seguros (HTTPS o `localhost`).
+- PBKDF2 protege la contraseña con 600 000 iteraciones; aun así, usa contraseñas fuertes.

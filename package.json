@@ -1,9 +1,15 @@
 {
   "name": "lucipher",
-  "version": "3.0.1",
-  "description": "LUCipher (Let Us Cipher) — authenticated symmetric encryption with ChaCha20-Poly1305 and scrypt",
+  "version": "4.0.0",
+  "description": "LUCipher (Let Us Cipher) — isomorphic authenticated encryption (AES-256-GCM + PBKDF2) for Node and the browser",
   "main": "LUCipher.js",
   "module": "index.mjs",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./LUCipher.js"
+    }
+  },
   "files": [
     "LUCipher.js",
     "LUCipher.mjs",
@@ -16,6 +22,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "build": "esbuild LUCipher.mjs --platform=node --format=cjs --outfile=LUCipher.js",
     "prepublishOnly": "npm run build && npm test"
   },
@@ -27,8 +34,11 @@
     "encryption",
     "decryption",
     "aead",
-    "chacha20-poly1305",
-    "scrypt",
+    "aes-gcm",
+    "pbkdf2",
+    "webcrypto",
+    "isomorphic",
+    "browser",
     "crypto"
   ],
   "author": "manufosela",
@@ -38,9 +48,10 @@
   },
   "homepage": "https://github.com/manufosela/lucipher/blob/main/README.md",
   "engines": {
-    "node": ">=16"
+    "node": ">=19"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "esbuild": "^0.28.1",
     "vitest": "^4.1.10"
   }
