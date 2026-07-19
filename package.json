@@ -1,13 +1,14 @@
 {
   "name": "lucipher",
-  "version": "2.2.0",
-  "description": "LUCipher, Let Us Cipher",
+  "version": "3.0.0",
+  "description": "LUCipher (Let Us Cipher) — authenticated symmetric encryption with ChaCha20-Poly1305 and scrypt",
   "main": "LUCipher.js",
   "module": "index.mjs",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "browserify": "browserify LUCipher.js -o lucipher.browserify.js && uglifyjs lucipher.browserify.js -o lucipher.browserify.min.js"
+    "build": "esbuild LUCipher.mjs --platform=node --format=cjs --outfile=LUCipher.js",
+    "prepublishOnly": "npm run build && npm test"
   },
   "repository": {
     "type": "git",
@@ -15,7 +16,11 @@
   },
   "keywords": [
     "encryption",
-    "decryption"
+    "decryption",
+    "aead",
+    "chacha20-poly1305",
+    "scrypt",
+    "crypto"
   ],
   "author": "manufosela",
   "license": "Apache-2.0",
@@ -23,12 +28,11 @@
     "url": "https://github.com/manufosela/lucipher/issues"
   },
   "homepage": "https://github.com/manufosela/lucipher/blob/master/README.md",
-  "dependencies": {
-    "wordsnoise": "^1.0.2"
+  "engines": {
+    "node": ">=16"
   },
   "devDependencies": {
-    "browserify": "^17.0.0",
-    "uglify-js": "^3.17.4",
+    "esbuild": "^0.28.1",
     "vitest": "^4.1.10"
   }
 }

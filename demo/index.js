@@ -1,9 +1,9 @@
 import LUCipher from '../LUCipher.mjs';
 
-let LUC = new LUCipher('mipassword', 'misalt');
-let code = LUC.cipher('Este es el texto a codificar');
-console.log('SIN CODIFICAR: Este es el texto a codificar');
-console.log('CODIFICADO: ', code);
+const original = 'Este es el texto a codificar';
+const luc = new LUCipher('mipassword');
+const code = luc.cipher(original);
+console.log('SIN CODIFICAR:', original);
+console.log('CODIFICADO:  ', code);
 console.log('\n-------------------------------------\n');
-let decode = LUC.desCipher(code);
-console.log(decode);
+console.log('DESCIFRADO:  ', luc.desCipher(code));
