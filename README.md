@@ -41,6 +41,16 @@ const code = luc.cipher('texto a cifrar');
 const decode = luc.desCipher(code);
 ```
 
+## Breaking changes (v2 → v3)
+
+La v3 es un cambio mayor. Si vienes de v2, ten en cuenta:
+
+- **Formato incompatible al cifrar:** un texto cifrado con v3 no lo descifra v2. (v3 sí lee textos v2; ver Migración.)
+- **`desCipher` lanza excepción** ante texto manipulado, corrupto o clave incorrecta, en vez de devolver `''`. Si tu código dependía de la cadena vacía como señal de error, adáptalo a `try/catch`.
+- **`wordsnoise` deja de ser dependencia** y el "ruido" desaparece: ya no corrompe textos que contienen caracteres como `€ ½ µ » ¬`.
+- **Solo Node (≥ 16):** se retiró el bundle para navegador (`browserify`), porque `chacha20-poly1305` y `scrypt` no existen en ese entorno. El soporte de navegador (WebCrypto) llegará en una versión posterior.
+- El segundo argumento del constructor (`salt`) ya **no es necesario** para cifrar; solo se usa para **leer** textos v2 antiguos.
+
 ## Migración desde v2
 
 - Los nuevos cifrados usan **siempre** el formato v3.
