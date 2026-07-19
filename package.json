@@ -22,6 +22,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "build": "esbuild LUCipher.mjs --platform=node --format=cjs --outfile=LUCipher.js",
     "prepublishOnly": "npm run build && npm test"
   },
@@ -47,6 +48,7 @@
     "node": ">=19"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "esbuild": "^0.28.1",
     "vitest": "^4.1.10"
   }
