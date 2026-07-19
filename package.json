@@ -5,7 +5,8 @@
   "main": "LUCipher.js",
   "module": "index.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "browserify": "browserify LUCipher.js -o lucipher.browserify.js && uglifyjs lucipher.browserify.js -o lucipher.browserify.min.js"
   },
   "repository": {
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "browserify": "^17.0.0",
-    "uglify-js": "^3.17.4"
+    "uglify-js": "^3.17.4",
+    "vitest": "^4.1.10"
   }
 }
