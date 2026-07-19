@@ -4,6 +4,12 @@
   "description": "LUCipher (Let Us Cipher) — authenticated symmetric encryption with ChaCha20-Poly1305 and scrypt",
   "main": "LUCipher.js",
   "module": "index.mjs",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./LUCipher.js"
+    }
+  },
   "files": [
     "LUCipher.js",
     "LUCipher.mjs",
@@ -38,7 +44,7 @@
   },
   "homepage": "https://github.com/manufosela/lucipher/blob/main/README.md",
   "engines": {
-    "node": ">=16"
+    "node": ">=19"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
