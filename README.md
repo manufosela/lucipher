@@ -14,6 +14,16 @@ Desde la **v4** el diseño es:
 
 > **Requiere Node ≥ 19 o un navegador moderno en contexto seguro** (HTTPS o `localhost`), donde `globalThis.crypto.subtle` está disponible.
 
+## Versiones
+
+| Versión | Entorno | Primitivas | Notas |
+|---------|---------|------------|-------|
+| `4.0.0` | Node ≥ 19 y navegador | AES-256-GCM + PBKDF2 | **Recomendada.** Core isomorfo e interoperable. API asíncrona. |
+| `3.0.x` | Solo Node ≥ 16 | ChaCha20-Poly1305 + scrypt | API síncrona. Además lee textos cifrados con v2. |
+| `2.2.x` | Node y navegador | AES-128-CBC + "ruido" | **Legacy, insegura** (IV fijo, sin integridad). No usar. |
+
+Cada versión mayor cambia el formato del texto cifrado y no es interoperable con las anteriores al cifrar. Para **leer** textos antiguos, usa la versión con la que se cifraron. Historial completo en el [CHANGELOG](CHANGELOG.md).
+
 ## Instalación
 
 ```
@@ -25,9 +35,17 @@ En Node, con ES modules:
 ```javascript
 import LUCipher from 'lucipher';
 
+const password = 'una-contraseña-fuerte';
 const luc = new LUCipher(password);
+
 const code = await luc.cipher('texto a cifrar');
-const decode = await luc.desCipher(code);
+
+try {
+  const decode = await luc.desCipher(code);
+  console.log(decode); // 'texto a cifrar'
+} catch {
+  // El texto está manipulado, corrupto o la contraseña es incorrecta
+}
 ```
 
 O con CommonJS:
@@ -35,18 +53,21 @@ O con CommonJS:
 ```javascript
 const LUCipher = require('lucipher').default;
 
-const luc = new LUCipher(password);
+const luc = new LUCipher('una-contraseña-fuerte');
 const code = await luc.cipher('texto a cifrar');
 const decode = await luc.desCipher(code);
 ```
 
-En el navegador, como módulo ESM (sin bundle):
+En el navegador, como módulo ESM (sin bundle), por CDN o desde `node_modules`:
 
 ```html
 <script type="module">
-  import LUCipher from './node_modules/lucipher/index.mjs';
+  // Por CDN:
+  import LUCipher from 'https://esm.sh/lucipher';
+  // ...o desde node_modules servido por tu bundler/servidor:
+  // import LUCipher from '/node_modules/lucipher/index.mjs';
 
-  const luc = new LUCipher(password);
+  const luc = new LUCipher('una-contraseña-fuerte');
   const code = await luc.cipher('texto a cifrar');
   const decode = await luc.desCipher(code); // descifra también lo cifrado en Node
 </script>
