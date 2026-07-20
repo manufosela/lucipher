@@ -1,6 +1,6 @@
 {
   "name": "lucipher",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "LUCipher (Let Us Cipher) — isomorphic authenticated encryption (AES-256-GCM + PBKDF2) for Node and the browser",
   "main": "LUCipher.js",
   "module": "index.mjs",
@@ -46,7 +46,7 @@
   "bugs": {
     "url": "https://github.com/manufosela/lucipher/issues"
   },
-  "homepage": "https://github.com/manufosela/lucipher/blob/main/README.md",
+  "homepage": "https://manufosela.dev/lucipher/",
   "engines": {
     "node": ">=19"
   },

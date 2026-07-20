@@ -3,6 +3,13 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y versionado según [SemVer](https://semver.org/lang/es/).
 
+## [4.0.2] - 2026-07-20
+
+### Changed
+
+- Enlace a la web del proyecto (`https://manufosela.dev/lucipher/`) desde el
+  README y el campo `homepage`. Sin cambios de código.
+
 ## [4.0.1] - 2026-07-20
 
 ### Changed
