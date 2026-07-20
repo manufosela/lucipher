@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUCipher — Let Us Cipher</title>
+<meta name="description" content="LUCipher: un pet-project de criptografía. De un experimento con 'ruido' en 2019 a una librería de cifrado autenticado isomorfa en 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        oklch(0.17 0.018 160);
+    --bg-deep:   oklch(0.13 0.016 160);
+    --panel:     oklch(0.21 0.021 162);
+    --line:      oklch(0.31 0.020 162);
+    --fg:        oklch(0.90 0.028 150);
+    --dim:       oklch(0.62 0.020 158);
+    --phos:      oklch(0.83 0.155 152);   /* verde fósforo, controlado */
+    --phos-deep: oklch(0.70 0.150 152);
+    --amber:     oklch(0.80 0.135 74);    /* aviso / inseguro suave */
+    --danger:    oklch(0.66 0.170 25);    /* v2 inseguro */
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+    --edge: 3px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(120% 90% at 82% -10%, oklch(0.24 0.04 160 / 0.55), transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 3px, oklch(0.10 0.01 160 / 0.22) 3px, oklch(0.10 0.01 160 / 0.22) 4px);
+    color: var(--fg);
+    font-family: var(--mono);
+    line-height: 1.65;
+    font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.05rem);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: var(--phos); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:hover { color: var(--fg); }
+  ::selection { background: var(--phos); color: var(--bg-deep); }
+
+  .wrap { width: min(72rem, 100% - 2.5rem); margin-inline: auto; }
+  .prompt::before { content: '> '; color: var(--phos); }
+  .comment { color: var(--dim); }
+  .comment::before { content: '// '; }
+
+  /* ---------- top bar ---------- */
+  header.bar {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: blur(8px);
+    background: oklch(0.15 0.016 160 / 0.82);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar .wrap { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0; gap: 1rem; }
+  .brand { font-weight: 800; letter-spacing: 0.02em; }
+  .brand b { color: var(--phos); }
+  .bar nav { display: flex; gap: clamp(0.6rem, 2vw, 1.4rem); font-size: 0.82rem; }
+  .bar nav a { color: var(--dim); text-decoration: none; }
+  .bar nav a:hover { color: var(--phos); }
+  .bar .v { color: var(--amber); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: clamp(3.2rem, 9vw, 7rem) 0 clamp(2.4rem, 6vw, 4rem); }
+  .win {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: linear-gradient(180deg, var(--panel), oklch(0.18 0.018 160));
+    box-shadow: 0 30px 80px -40px oklch(0.05 0.02 160 / 0.9), inset 0 1px 0 oklch(1 0 0 / 0.03);
+    overflow: hidden;
+  }
+  .win-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--line); background: oklch(0.19 0.02 160); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+  .dot.g { background: var(--phos-deep); }
+  .dot.a { background: var(--amber); }
+  .dot.r { background: var(--danger); }
+  .win-title { margin-left: auto; font-size: 0.75rem; color: var(--dim); }
+  .win-body { padding: clamp(1.4rem, 4vw, 2.8rem); }
+
+  .kicker { color: var(--dim); font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; }
+  h1 {
+    font-size: clamp(2.6rem, 6vw + 1rem, 5.6rem);
+    font-weight: 800; line-height: 0.98; letter-spacing: -0.02em;
+    margin: 0.5rem 0 0.2rem;
+  }
+  h1 .us { color: var(--phos); }
+  .tagline { font-size: clamp(1.05rem, 2.4vw, 1.5rem); color: var(--fg); min-height: 1.6em; }
+  .tagline .cur { display: inline-block; width: 0.62ch; height: 1.05em; translate: 0 0.16em; background: var(--phos); animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .lede { color: var(--dim); max-width: 46ch; margin-top: 1.1rem; }
+
+  .cmds { margin-top: 1.8rem; display: flex; flex-wrap: wrap; gap: 0.7rem 1rem; align-items: center; }
+  .install {
+    font-weight: 500; background: var(--bg-deep); border: 1px solid var(--line);
+    padding: 0.6rem 0.95rem; border-radius: 6px; color: var(--fg);
+  }
+  .install .p { color: var(--phos); }
+  .btn {
+    text-decoration: none; padding: 0.6rem 1.1rem; border-radius: 6px; font-weight: 700; font-size: 0.9rem;
+    border: 1px solid var(--phos-deep); color: var(--bg-deep); background: var(--phos);
+    transition: translate 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover { color: var(--bg-deep); translate: 0 -2px; box-shadow: 0 8px 24px -10px var(--phos-deep); }
+  .btn.ghost { background: transparent; color: var(--phos); }
+  .btn.ghost:hover { color: var(--fg); border-color: var(--phos); }
+
+  .badges { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.76rem; }
+  .badge { border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.7rem; color: var(--dim); }
+  .badge b { color: var(--phos); }
+
+  /* ---------- sections ---------- */
+  section { padding: clamp(2.6rem, 7vw, 5rem) 0; }
+  .sec-tag { color: var(--phos); font-size: 0.8rem; letter-spacing: 0.1em; }
+  h2 { font-size: clamp(1.5rem, 3.5vw, 2.3rem); font-weight: 800; letter-spacing: -0.01em; margin: 0.3rem 0 1.4rem; }
+  h2 .hash { color: var(--dim); }
+  p.body { color: var(--fg); max-width: 62ch; margin-bottom: 1rem; }
+  p.body.dim { color: var(--dim); }
+
+  /* idea columns */
+  .cols { display: grid; grid-template-columns: 1fr; gap: clamp(1.4rem, 4vw, 3rem); align-items: start; }
+  @media (min-width: 46rem) { .cols { grid-template-columns: 1.1fr 0.9fr; } }
+  .aside {
+    border-left: 2px solid var(--line); padding: 0.2rem 0 0.2rem 1.2rem; color: var(--dim); font-size: 0.92rem;
+  }
+  .aside b { color: var(--amber); }
+
+  /* ---------- timeline / git log ---------- */
+  .log { position: relative; margin-top: 0.5rem; }
+  .log::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(var(--danger), var(--amber) 30%, var(--phos) 78%); opacity: 0.5; }
+  .commit { position: relative; padding: 0 0 2.2rem 2.4rem; }
+  .commit:last-child { padding-bottom: 0.4rem; }
+  .commit .node { position: absolute; left: 0; top: 4px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--bg); background: var(--phos); box-shadow: 0 0 0 3px oklch(0.83 0.155 152 / 0.18); }
+  .commit.warn .node { background: var(--amber); box-shadow: 0 0 0 3px oklch(0.80 0.135 74 / 0.18); }
+  .commit.bad  .node { background: var(--danger); box-shadow: 0 0 0 3px oklch(0.66 0.17 25 / 0.18); }
+  .commit .meta { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; align-items: baseline; }
+  .commit .ver { font-weight: 800; font-size: 1.05rem; }
+  .commit.warn .ver { color: var(--amber); }
+  .commit.bad .ver { color: var(--danger); }
+  .commit.good .ver { color: var(--phos); }
+  .commit .date { color: var(--dim); font-size: 0.8rem; }
+  .commit .tag { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid currentColor; border-radius: 4px; padding: 0.05rem 0.4rem; }
+  .commit.warn .tag, .commit.bad .tag { color: var(--amber); }
+  .commit.bad .tag { color: var(--danger); }
+  .commit.good .tag { color: var(--phos); }
+  .commit h3 { font-size: 1rem; font-weight: 700; margin: 0.5rem 0 0.35rem; }
+  .commit p { color: var(--dim); max-width: 60ch; font-size: 0.92rem; }
+  .commit code { color: var(--fg); background: var(--bg-deep); padding: 0.05rem 0.35rem; border-radius: 4px; border: 1px solid var(--line); font-size: 0.85em; }
+
+  /* ---------- features ---------- */
+  .feats { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  @media (min-width: 40rem) { .feats { grid-template-columns: 1fr 1fr; } }
+  .feat { background: var(--panel); padding: 1.3rem 1.4rem; }
+  .feat .k { color: var(--phos); font-weight: 700; font-size: 0.92rem; }
+  .feat .d { color: var(--dim); font-size: 0.88rem; margin-top: 0.35rem; }
+
+  /* ---------- code block ---------- */
+  pre { background: var(--bg-deep); border: 1px solid var(--line); border-radius: 8px; padding: 1.2rem 1.3rem; overflow-x: auto; font-size: 0.86rem; line-height: 1.75; }
+  pre .c { color: var(--dim); }
+  pre .k { color: var(--amber); }
+  pre .s { color: var(--phos); }
+  pre .f { color: var(--fg); }
+
+  /* ---------- honest note ---------- */
+  .note { border: 1px dashed var(--amber); border-radius: 8px; padding: clamp(1.2rem, 3vw, 1.8rem); background: oklch(0.80 0.135 74 / 0.05); }
+  .note h2 { margin-top: 0; }
+  .note h2 .hash { color: var(--amber); }
+  .note p { color: var(--fg); max-width: 64ch; }
+  .note p + p { margin-top: 0.8rem; }
+  .note .dim { color: var(--dim); }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--line); padding: 2.4rem 0 3rem; color: var(--dim); font-size: 0.85rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; align-items: center; }
+  footer nav { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  footer a { text-decoration: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <span class="brand">LU<b>Cipher</b></span>
+    <nav>
+      <a href="#idea">la&nbsp;idea</a>
+      <a href="#historia">evolución</a>
+      <a href="#hoy">v4</a>
+      <a href="#uso">uso</a>
+      <a href="https://github.com/manufosela/lucipher">github&nbsp;↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="win">
+        <div class="win-bar">
+          <span class="dot r"></span><span class="dot a"></span><span class="dot g"></span>
+          <span class="win-title">~/lucipher — let us cipher</span>
+        </div>
+        <div class="win-body">
+          <p class="kicker">pet-project · criptografía · aprendizaje</p>
+          <h1>LU<span class="us">Cipher</span></h1>
+          <p class="tagline"><span id="type"></span><span class="cur"></span></p>
+          <p class="lede">Un experimento personal de cifrado que empezó en 2019 jugando con "ruido", y siete años después se rehízo desde cero como una librería de cifrado autenticado que corre igual en Node y en el navegador.</p>
+
+          <div class="cmds">
+            <span class="install"><span class="p">$</span> npm i lucipher</span>
+            <a class="btn" href="https://www.npmjs.com/package/lucipher">Ver en npm ↗</a>
+            <a class="btn ghost" href="https://github.com/manufosela/lucipher">Código ↗</a>
+          </div>
+
+          <div class="badges">
+            <span class="badge"><b>v4.0.1</b> · estable</span>
+            <span class="badge">AES-256-GCM + PBKDF2</span>
+            <span class="badge">Node + navegador</span>
+            <span class="badge">0 dependencias</span>
+            <span class="badge">Apache-2.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="idea">
+    <div class="wrap">
+      <p class="sec-tag prompt">cat IDEA.md</p>
+      <h2><span class="hash">## </span>La idea</h2>
+      <div class="cols">
+        <div>
+          <p class="body">La pregunta original era ingenua y honesta: <em>si ciframos siempre el mismo texto con la misma clave, la salida es siempre idéntica… ¿cómo hacemos que cambie?</em></p>
+          <p class="body dim">La primera respuesta fue divertida: añadir <b>ruido</b> pseudoaleatorio al texto antes de cifrarlo (con un paquetito propio, <code>wordsnoise</code>) y quitarlo al descifrar. Así, cada cifrado salía distinto. Funcionaba… como juguete.</p>
+          <p class="body dim">Años después, un análisis a fondo destapó la verdad: el ruido no aportaba seguridad, solo <em>parcheaba</em> un problema autoinfligido —un IV fijo— y encima corrompía textos con ciertos caracteres. Ese hallazgo fue el punto de partida del rediseño.</p>
+        </div>
+        <aside class="aside">
+          <p><b>La lección número uno de cripto:</b> no inventes primitivas ni "trucos" caseros. El sitio donde ser creativo es el envoltorio y la ergonomía, nunca el núcleo criptográfico.</p>
+          <p style="margin-top:1rem">El ruido fue un buen instinto (que la salida cambie) resuelto de la peor forma. La forma correcta —un IV/nonce aleatorio por mensaje— ya venía gratis en el estándar.</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="historia">
+    <div class="wrap">
+      <p class="sec-tag prompt">git log --oneline --reverse</p>
+      <h2><span class="hash">## </span>Cómo evolucionó</h2>
+      <div class="log">
+
+        <article class="commit bad">
+          <span class="node"></span>
+          <div class="meta"><span class="ver">v1 · la idea</span><span class="date">2019</span><span class="tag">experimento</span></div>
+          <h3>Nace como pet-project</h3>
+          <p>Un experimento para aprender: cifrar texto y hacer que la salida variara con "ruido". La semilla de todo, sin pretensiones.</p>
+        </article>
+
+        <article class="commit bad">
+          <span class="node"></span>
+          <div class="meta"><span class="ver">v2.x</span><span class="date">2019 – 2023</span><span class="tag">inseguro</span></div>
+          <h3>AES-128-CBC + ruido, publicado en npm</h3>
+          <p>Cifraba y descifraba, sí, pero con fallos serios: <code>IV fijo</code> hardcodeado, sin integridad (maleable), secretos de relleno escritos en el propio código y un ruido que borraba caracteres legítimos como <code>€ ½ µ</code>. Servía para ocultar de una mirada casual, no para proteger nada.</p>
+        </article>
+
+        <article class="commit good">
+          <span class="node"></span>
+          <div class="meta"><span class="ver">análisis</span><span class="date">jul 2026</span><span class="tag">con IA</span></div>
+          <h3>Una revisión crítica y honesta</h3>
+          <p>Un análisis objetivo —asistido por IA— puso nombre a cada defecto y, sobre todo, distinguió la buena intención (salida variable) de la mala implementación (ruido sobre un IV fijo). De ahí salió el plan de rediseño.</p>
+        </article>
+
+        <article class="commit good">
+          <span class="node"></span>
+          <div class="meta"><span class="ver">v3.0</span><span class="date">jul 2026</span><span class="tag">AEAD</span></div>
+          <h3>Cifrado autenticado de verdad</h3>
+          <p><code>ChaCha20-Poly1305</code> + <code>scrypt</code>, salt y nonce aleatorios por mensaje (adiós al ruido), integridad real (un texto manipulado se detecta) y cero secretos en el fuente. El bug de pérdida de datos, resuelto.</p>
+        </article>
+
+        <article class="commit good">
+          <span class="node"></span>
+          <div class="meta"><span class="ver">v4.0</span><span class="date">jul 2026</span><span class="tag">isomorfo</span></div>
+          <h3>El mismo cifrado en Node y en el navegador</h3>
+          <p>Reescrito sobre la <code>Web Crypto API</code>: <code>AES-256-GCM</code> + <code>PBKDF2</code>. Un único código que corre en ambos entornos, con textos <em>interoperables</em> entre ellos —cifra en el servidor, descifra en el cliente— y verificado con un test real de navegador. El precio consciente: PBKDF2 en vez de scrypt, porque el navegador no tiene scrypt.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="hoy">
+    <div class="wrap">
+      <p class="sec-tag prompt">lucipher --features</p>
+      <h2><span class="hash">## </span>Qué es hoy</h2>
+      <div class="feats">
+        <div class="feat"><div class="k">Cifrado autenticado</div><div class="d">AES-256-GCM: confidencialidad e integridad. Un texto manipulado se rechaza al descifrar.</div></div>
+        <div class="feat"><div class="k">Isomorfo</div><div class="d">El mismo código en Node ≥19 y navegadores modernos, vía <code>crypto.subtle</code>.</div></div>
+        <div class="feat"><div class="k">Interoperable</div><div class="d">Cifra en un entorno, descifra en el otro. Verificado con Playwright.</div></div>
+        <div class="feat"><div class="k">Sin secretos ni deps</div><div class="d">Cero dependencias, cero valores hardcodeados. Salt e IV aleatorios por mensaje.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="uso">
+    <div class="wrap">
+      <p class="sec-tag prompt">cat example.mjs</p>
+      <h2><span class="hash">## </span>Uso</h2>
+      <pre><code><span class="k">import</span> <span class="f">LUCipher</span> <span class="k">from</span> <span class="s">'lucipher'</span>;
+
+<span class="k">const</span> luc = <span class="k">new</span> <span class="f">LUCipher</span>(<span class="s">'una-contraseña-fuerte'</span>);
+<span class="k">const</span> code = <span class="k">await</span> luc.<span class="f">cipher</span>(<span class="s">'texto a cifrar'</span>);
+
+<span class="k">try</span> {
+  <span class="k">const</span> claro = <span class="k">await</span> luc.<span class="f">desCipher</span>(code);
+  <span class="c">// 'texto a cifrar' — descifra también lo cifrado en Node</span>
+} <span class="k">catch</span> {
+  <span class="c">// manipulado, corrupto o contraseña incorrecta</span>
+}</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="note">
+        <h2><span class="hash">! </span>Con honestidad</h2>
+        <p>LUCipher es, ante todo, un <b>ejercicio de aprendizaje sobre criptografía</b> y un pet-project para disfrutar construyendo algo que además me resulta útil en mis proyectos.</p>
+        <p>Usa primitivas <em>estándar</em> de Node y del navegador —nada de cripto casera— y sigue buenas prácticas: cifrado autenticado, KDF con sal, aleatoriedad por mensaje. Pero <span class="dim">no ha pasado una auditoría profesional</span>. Para secretos críticos, apóyate en librerías consolidadas y revisadas por expertos.</p>
+        <p class="dim">Dicho esto: pasó de ser un juguete inseguro a algo con fundamentos sólidos, y ese viaje —de la idea ingenua al diseño correcto— es justo lo que hace que valga la pena.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>LUCipher · <span class="comment" style="color:var(--dim)">let us cipher</span> · por <a href="https://github.com/manufosela">@manufosela</a></span>
+    <nav>
+      <a href="https://www.npmjs.com/package/lucipher">npm</a>
+      <a href="https://github.com/manufosela/lucipher">GitHub</a>
+      <a href="https://github.com/manufosela/lucipher/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/manufosela/lucipher/releases">Releases</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // Hero: "decrypt" the tagline from base64-looking noise into the real text.
+  (function () {
+    const el = document.getElementById('type');
+    const target = 'Let Us Cipher.';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!el) return;
+    if (reduce) { el.textContent = target; return; }
+    const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    const rnd = () => glyphs[Math.floor(Math.random() * glyphs.length)];
+    let frame = 0;
+    const settle = new Array(target.length).fill(0).map((_, i) => 8 + i * 3);
+    const tick = () => {
+      let out = '';
+      for (let i = 0; i < target.length; i++) {
+        if (frame >= settle[i]) out += target[i];
+        else out += target[i] === ' ' ? ' ' : rnd();
+      }
+      el.textContent = out;
+      frame++;
+      if (frame <= settle[settle.length - 1] + 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  })();
+</script>
+</body>
+</html>
