@@ -3,6 +3,14 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y versionado según [SemVer](https://semver.org/lang/es/).
 
+## [4.0.1] - 2026-07-20
+
+### Changed
+
+- README: tabla de versiones (2.2.x / 3.0.x / 4.0.0), ejemplos con contraseña
+  declarada y manejo de errores (`try/catch`), y opción de import por CDN en el
+  navegador. Sin cambios de código.
+
 ## [4.0.0] - 2026-07-19
 
 Core isomorfo (Node + navegador) sobre Web Crypto API.

@@ -1,6 +1,6 @@
 {
   "name": "lucipher",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "LUCipher (Let Us Cipher) — isomorphic authenticated encryption (AES-256-GCM + PBKDF2) for Node and the browser",
   "main": "LUCipher.js",
   "module": "index.mjs",
